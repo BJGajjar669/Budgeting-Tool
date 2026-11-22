@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Budgeting Tool</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232a78d6'/%3E%3Cpath d='M9 21v-6m7 6V11m7 10v-8' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true"><rect width="32" height="32" rx="7" fill="var(--series-1)"/><path d="M9 21v-6m7 6V11m7 10v-8" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>
+      <span>Budgeting Tool</span>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button role="tab" data-tab="overview" aria-selected="true">Overview</button>
+      <button role="tab" data-tab="plan">Goals &amp; plan</button>
+      <button role="tab" data-tab="transactions">Transactions</button>
+      <button role="tab" data-tab="budgets">Budgets</button>
+      <button role="tab" data-tab="accounts">Accounts</button>
+    </nav>
+    <button class="btn ghost" id="syncBtn" title="Pull the latest transactions from your banks" hidden>Sync now</button>
+  </header>
+
+  <div id="banner" class="banner" hidden></div>
+
+  <main>
+    <!-- OVERVIEW ------------------------------------------------------------ -->
+    <section id="tab-overview" class="tab">
+      <div class="section-head">
+        <h1>Where your money is going</h1>
+        <div class="month-picker">
+          <button class="icon-btn" id="prevMonth" aria-label="Previous month">‹</button>
+          <span id="monthLabel"></span>
+          <button class="icon-btn" id="nextMonth" aria-label="Next month">›</button>
+        </div>
+      </div>
+
+      <div class="tiles" id="tiles"></div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-head">
+            <h2>Spending by category</h2>
+            <span class="muted small" id="catHint"></span>
+          </div>
+          <div id="categoryList" class="cat-list"></div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <h2>Income vs spending</h2>
+            <button class="link-btn small" id="trendTableToggle">Show table</button>
+          </div>
+          <div class="legend" id="trendLegend"></div>
+          <div id="trendChart" class="chart"></div>
+          <div id="trendTable" hidden></div>
+          <h2 class="mt">Top merchants</h2>
+          <div id="merchants"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PLAN ---------------------------------------------------------------- -->
+    <section id="tab-plan" class="tab" hidden>
+      <div class="section-head">
+        <h1>Where your money needs to go</h1>
+        <button class="btn primary" id="addGoalBtn">+ New goal</button>
+      </div>
+      <p class="muted" id="planBasis"></p>
+
+      <div class="card">
+        <h2>Your typical month</h2>
+        <div id="moneyMap"></div>
+        <ul id="planNotes" class="notes"></ul>
+      </div>
+
+      <div id="goalCards" class="goal-grid"></div>
+
+      <div class="card" id="trimsCard" hidden>
+        <h2>Suggested trims to close the gap</h2>
+        <p class="muted small">Only discretionary categories are touched; no category is cut by more than 35%. Apply one as a budget to track it.</p>
+        <div id="trims"></div>
+      </div>
+    </section>
+
+    <!-- TRANSACTIONS -------------------------------------------------------- -->
+    <section id="tab-transactions" class="tab" hidden>
+      <div class="section-head">
+        <h1>Transactions</h1>
+      </div>
+      <div class="filters">
+        <input type="month" id="txMonth" aria-label="Month" />
+        <select id="txCategory" aria-label="Category"><option value="">All categories</option></select>
+        <select id="txAccount" aria-label="Account"><option value="">All accounts</option></select>
+        <input type="search" id="txSearch" placeholder="Search merchant or description" aria-label="Search" />
+      </div>
+      <div class="card flush">
+        <div class="table-wrap">
+          <table class="tx-table">
+            <thead><tr><th>Date</th><th>Description</th><th>Account</th><th>Category</th><th class="num">Amount</th></tr></thead>
+            <tbody id="txBody"></tbody>
+          </table>
+        </div>
+        <p class="muted small pad" id="txCount"></p>
+      </div>
+      <div class="card">
+        <h2>Auto-categorization rules</h2>
+        <p class="muted small">Any transaction whose description contains the text gets that category. Changing a category with “apply to similar” adds a rule here.</p>
+        <form id="ruleForm" class="inline-form">
+          <input name="pattern" placeholder="Text to match, e.g. costco" required minlength="2" />
+          <select name="category" class="cat-select" required></select>
+          <button class="btn">Add rule</button>
+        </form>
+        <div id="rules"></div>
+      </div>
+    </section>
+
+    <!-- BUDGETS ------------------------------------------------------------- -->
+    <section id="tab-budgets" class="tab" hidden>
+      <div class="section-head">
+        <h1>Monthly budgets</h1>
+        <button class="btn primary" id="saveBudgets">Save budgets</button>
+      </div>
+      <p class="muted">Set a monthly limit for the categories you want to watch. “Typical” is your average over the last three full months.</p>
+      <div class="card flush">
+        <div class="table-wrap">
+          <table class="budget-table">
+            <thead><tr><th>Category</th><th>Type</th><th class="num">Typical / mo</th><th class="num">This month</th><th class="num">Budget / mo</th></tr></thead>
+            <tbody id="budgetBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ACCOUNTS ------------------------------------------------------------ -->
+    <section id="tab-accounts" class="tab" hidden>
+      <div class="section-head">
+        <h1>Accounts</h1>
+        <div class="row-gap">
+          <button class="btn" id="sandboxBtn" hidden>Add test bank (sandbox)</button>
+          <button class="btn primary" id="connectBtn">Connect a bank</button>
+        </div>
+      </div>
+      <div id="plaidSetup" class="card callout" hidden>
+        <h2>Connect your banks</h2>
+        <p>Bank connections use <strong>Plaid</strong>, which works with 12,000+ banks and card issuers. To turn it on:</p>
+        <ol>
+          <li>Create a free account at <a href="https://dashboard.plaid.com/signup" target="_blank" rel="noopener">dashboard.plaid.com</a> and copy your <em>client ID</em> and <em>secret</em> from <em>Developers → Keys</em>.</li>
+          <li>Copy <code>.env.example</code> to <code>.env</code> and fill in <code>PLAID_CLIENT_ID</code> and <code>PLAID_SECRET</code>. Start with <code>PLAID_ENV=sandbox</code> to try it with fake banks, then switch to <code>production</code> for your real accounts.</li>
+          <li>Restart the app.</li>
+        </ol>
+        <p class="muted small">Until then you can import CSV statements below, or load demo data to explore.</p>
+      </div>
+      <div class="tiles" id="netWorth"></div>
+      <div id="connections"></div>
+      <div class="card flush">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Account</th><th>Institution</th><th>Type</th><th class="num">Balance</th><th></th></tr></thead>
+            <tbody id="accountBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h2>Import a CSV statement</h2>
+          <p class="muted small">Download transactions from your bank’s website as CSV. Re-importing the same file won’t create duplicates.</p>
+          <form id="csvForm" class="stack">
+            <label>Account name <input name="account" required placeholder="e.g. Chase Checking" /></label>
+            <label>Account type
+              <select name="type"><option value="depository">Checking / savings</option><option value="credit">Credit card</option></select>
+            </label>
+            <label class="check"><input type="checkbox" name="spendingIsPositive" /> Purchases are listed as positive numbers (common for credit cards)</label>
+            <label>CSV file <input type="file" name="file" accept=".csv,text/csv" required /></label>
+            <button class="btn primary">Import</button>
+          </form>
+        </div>
+        <div class="card">
+          <h2>Demo data</h2>
+          <p class="muted small">Six months of realistic sample transactions, three accounts, budgets and goals, so you can see how everything works.</p>
+          <div class="row-gap">
+            <button class="btn" id="loadDemo">Load demo data</button>
+            <button class="btn danger-ghost" id="clearDemo">Remove demo data</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- goal dialog -->
+  <dialog id="goalDialog">
+    <form method="dialog" id="goalForm" class="stack">
+      <h2 id="goalDialogTitle">New goal</h2>
+      <label>Name <input name="name" required placeholder="e.g. Emergency fund" /></label>
+      <div class="row-2">
+        <label>Target amount ($) <input name="target_amount" type="number" min="1" step="0.01" required /></label>
+        <label>Target date <input name="target_date" type="date" required /></label>
+      </div>
+      <label>Track progress with
+        <select name="account_id"><option value="">An amount I enter</option></select>
+      </label>
+      <label id="savedField">Saved so far ($) <input name="current_amount" type="number" min="0" step="0.01" value="0" /></label>
+      <label>Priority
+        <select name="priority">
+          <option value="0">1 — fund first</option>
+          <option value="1">2</option>
+          <option value="2">3</option>
+          <option value="3">4</option>
+          <option value="4">5 — fund last</option>
+        </select>
+      </label>
+      <p class="muted small">When an account is linked, its balance counts as saved. If several goals share an account, the balance fills them in priority order.</p>
+      <div class="dialog-actions">
+        <button type="button" class="btn danger-ghost" id="deleteGoal" hidden>Delete</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn" value="cancel" id="cancelGoal">Cancel</button>
+        <button class="btn primary" value="save">Save goal</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="tooltip" class="tooltip" role="tooltip" hidden></div>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
