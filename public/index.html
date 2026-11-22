@@ -3,16 +3,21 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Budgeting Tool</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232a78d6'/%3E%3Cpath d='M9 21v-6m7 6V11m7 10v-8' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E" />
+  <title>Budgify</title>
+  <meta name="theme-color" content="#0D6B56" />
+  <link rel="icon" type="image/png" sizes="32x32" href="brand/favicon-32.png" />
+  <link rel="apple-touch-icon" href="brand/apple-touch-icon.png" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <header class="topbar">
-    <div class="brand">
-      <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true"><rect width="32" height="32" rx="7" fill="var(--series-1)"/><path d="M9 21v-6m7 6V11m7 10v-8" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>
-      <span>Budgeting Tool</span>
-    </div>
+    <a class="brand" href="/" aria-label="Budgify home">
+      <img src="brand/icon-192.png" alt="" width="32" height="32" />
+      <picture>
+        <source srcset="brand/wordmark-dark.png" media="(prefers-color-scheme: dark)" />
+        <img src="brand/wordmark.png" alt="Budgify" class="wordmark" height="22" />
+      </picture>
+    </a>
     <nav class="tabs" role="tablist">
       <button role="tab" data-tab="overview" aria-selected="true">Overview</button>
       <button role="tab" data-tab="plan">Goals &amp; plan</button>
@@ -21,6 +26,16 @@
       <button role="tab" data-tab="accounts">Accounts</button>
     </nav>
     <button class="btn ghost" id="syncBtn" title="Pull the latest transactions from your banks" hidden>Sync now</button>
+    <div class="user-menu">
+      <button class="avatar-btn" id="userBtn" aria-haspopup="menu" aria-expanded="false">
+        <span class="avatar" id="userInitials">·</span><span class="uname" id="userName"></span>
+      </button>
+      <div class="menu" id="userMenu" role="menu" hidden>
+        <div class="who"><strong id="menuName"></strong><span id="menuEmail"></span></div>
+        <button role="menuitem" id="changePwBtn">Change password</button>
+        <button role="menuitem" id="logoutBtn">Sign out</button>
+      </div>
+    </div>
   </header>
 
   <div id="banner" class="banner" hidden></div>
@@ -217,6 +232,23 @@
         <span class="spacer"></span>
         <button type="button" class="btn" value="cancel" id="cancelGoal">Cancel</button>
         <button class="btn primary" value="save">Save goal</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- change password dialog -->
+  <dialog id="pwDialog">
+    <form id="pwForm" class="stack">
+      <h2>Change password</h2>
+      <label>Current password <input name="current" type="password" autocomplete="current-password" required /></label>
+      <label>New password <input name="next" type="password" autocomplete="new-password" required minlength="10" /></label>
+      <label>Confirm new password <input name="confirm" type="password" autocomplete="new-password" required /></label>
+      <p class="muted small">At least 10 characters. Other devices will be signed out.</p>
+      <p class="field-error" id="pwError" role="alert" hidden></p>
+      <div class="dialog-actions">
+        <span class="spacer"></span>
+        <button type="button" class="btn" id="cancelPw">Cancel</button>
+        <button class="btn primary">Update password</button>
       </div>
     </form>
   </dialog>

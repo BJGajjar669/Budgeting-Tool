@@ -32,6 +32,10 @@ async function api(path, opts = {}) {
   }
   const res = await fetch(path, init);
   const data = await res.json().catch(() => ({}));
+  if (res.status === 401 && data.signedOut) {
+    location.replace('/login');
+    throw new Error('Signed out');
+  }
   if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
   return data;
 }
@@ -163,7 +167,7 @@ document.addEventListener('click', (e) => {
 
 // Grouped columns: income vs spending, six months. One y-axis, two series, legend + table view.
 const SERIES = [
-  { key: 'income', label: 'Income', color: 'var(--series-1)' },
+  { key: 'income', label: 'Income', color: 'var(--series-3)' },
   { key: 'spending', label: 'Spending', color: 'var(--series-2)' },
 ];
 function drawTrend(trend) {
@@ -263,8 +267,12 @@ async function renderPlan() {
   // Goal cards.
   $('#goalCards').innerHTML = plan.goals.length
     ? plan.goals.map(goalCard).join('')
-    : `<div class="card empty" style="grid-column:1/-1"><h2>No savings goals yet</h2><p>Add a goal (emergency fund, trip, down payment…) and the plan will tell you how much to set aside each month.</p><button class="btn primary" onclick="openGoal()">+ New goal</button></div>`;
-  for (const c of $$('[data-goal]')) c.addEventListener('click', () => openGoal(+c.dataset.goal));
+    : `<div class="card empty" style="grid-column:1/-1"><h2>No savings goals yet</h2><p>Add a goal (emergency fund, trip, down payment…) and the plan will tell you how much to set aside each month.</p><button class="btn primary" data-new-goal>+ New goal</button></div>`;
+  for (const c of $$('[data-goal]')) {
+    c.addEventListener('click', () => openGoal(+c.dataset.goal));
+    c.addEventListener('keydown', (e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), openGoal(+c.dataset.goal)));
+  }
+  $('[data-new-goal]')?.addEventListener('click', () => openGoal());
 
   // Trims.
   $('#trimsCard').hidden = !plan.trims.length;
@@ -333,7 +341,6 @@ function openGoal(id) {
   $('#savedField').hidden = !!f.account_id.value;
   dlg.showModal();
 }
-window.openGoal = openGoal;
 $('#addGoalBtn').addEventListener('click', () => openGoal());
 $('#goalForm').account_id.addEventListener('change', (e) => ($('#savedField').hidden = !!e.target.value));
 $('#cancelGoal').addEventListener('click', () => dlg.close());
@@ -608,9 +615,61 @@ async function refreshStatus() {
   await loadAccounts();
 }
 
+// ---------- account menu ------------------------------------------------------
+async function loadUser() {
+  const { user } = await api('/api/auth/state');
+  if (!user) return location.replace('/login');
+  const initials = user.name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('') || '?';
+  $('#userInitials').textContent = initials;
+  $('#userName').textContent = user.name.split(/\s+/)[0];
+  $('#menuName').textContent = user.name;
+  $('#menuEmail').textContent = user.email;
+}
+const menu = $('#userMenu');
+const setMenu = (open) => {
+  menu.hidden = !open;
+  $('#userBtn').setAttribute('aria-expanded', String(open));
+};
+$('#userBtn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  setMenu(menu.hidden);
+});
+document.addEventListener('click', (e) => !menu.contains(e.target) && setMenu(false));
+document.addEventListener('keydown', (e) => e.key === 'Escape' && setMenu(false));
+$('#logoutBtn').addEventListener('click', async () => {
+  await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+  location.replace('/login');
+});
+const pwDlg = $('#pwDialog');
+$('#changePwBtn').addEventListener('click', () => {
+  setMenu(false);
+  $('#pwForm').reset();
+  $('#pwError').hidden = true;
+  pwDlg.showModal();
+});
+$('#cancelPw').addEventListener('click', () => pwDlg.close());
+$('#pwForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = e.target;
+  const err = $('#pwError');
+  if (f.next.value !== f.confirm.value) {
+    err.textContent = 'The new passwords don’t match.';
+    err.hidden = false;
+    return;
+  }
+  try {
+    await api('/api/auth/password', { method: 'POST', body: { current: f.current.value, next: f.next.value } });
+    pwDlg.close();
+    toast('Password updated. Other devices have been signed out.');
+  } catch (ex) {
+    err.textContent = ex.message;
+    err.hidden = false;
+  }
+});
+
 (async function boot() {
   try {
-    const [, cats] = await Promise.all([refreshStatus(), api('/api/categories')]);
+    const [, cats] = await Promise.all([refreshStatus(), api('/api/categories'), loadUser()]);
     state.categories = cats;
     state.month = state.status.today.slice(0, 7);
     $('#txCategory').innerHTML = '<option value="">All categories</option>' + cats.map((c) => `<option>${esc(c.name)}</option>`).join('');

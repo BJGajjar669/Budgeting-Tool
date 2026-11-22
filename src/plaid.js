@@ -21,8 +21,8 @@ function createPlaid({ clientId, secret, env = 'sandbox', countryCodes = ['US'],
 
   async function createLinkToken({ itemId } = {}) {
     const req = {
-      user: { client_user_id: 'budgeting-tool-local-user' },
-      client_name: 'Budgeting Tool',
+      user: { client_user_id: 'budgify-local-user' },
+      client_name: 'Budgify',
       country_codes: countryCodes,
       language: 'en',
     };

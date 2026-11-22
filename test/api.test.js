@@ -38,25 +38,30 @@ function fakePlaid() {
   };
 }
 
-function setup() {
+async function setup() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'budget-test-'));
   const client = fakePlaid();
   const ctx = createApp({ dataDir: dir, today: '2026-11-10', plaidConfig: { client, env: 'sandbox' } });
   const server = ctx.app.listen(0);
   const base = `http://127.0.0.1:${server.address().port}`;
+  let cookie = null;
   const call = async (method, p, body, type = 'application/json') => {
     const res = await fetch(base + p, {
       method,
-      headers: body === undefined ? {} : { 'content-type': type },
+      headers: { ...(body === undefined ? {} : { 'content-type': type }), ...(cookie ? { cookie } : {}) },
       body: body === undefined ? undefined : type === 'application/json' ? JSON.stringify(body) : body,
     });
+    const set = res.headers.get('set-cookie');
+    if (set) cookie = set.split(';')[0];
     return { status: res.status, body: await res.json() };
   };
+  const signup = await call('POST', '/api/auth/setup', { name: 'Test User', email: 'me@example.com', password: 'correct horse battery' });
+  assert.equal(signup.status, 201);
   return { ...ctx, client, call, dir, close: () => server.close() };
 }
 
 test('bank connection: exchange, incremental sync, encrypted token', async (t) => {
-  const s = setup();
+  const s = await setup();
   t.after(s.close);
 
   const link = await s.call('POST', '/api/plaid/link-token', {});
@@ -97,7 +102,7 @@ test('bank connection: exchange, incremental sync, encrypted token', async (t) =
 });
 
 test('CSV import, manual recategorization with rules, budgets, goals and plan', async (t) => {
-  const s = setup();
+  const s = await setup();
   t.after(s.close);
   const csv = [
     'Date,Description,Amount',
@@ -144,7 +149,7 @@ test('CSV import, manual recategorization with rules, budgets, goals and plan', 
 });
 
 test('demo data loads, plans, and clears', async (t) => {
-  const s = setup();
+  const s = await setup();
   t.after(s.close);
   await s.call('POST', '/api/demo');
   const st = (await s.call('GET', '/api/status')).body;

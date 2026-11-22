@@ -1,8 +1,8 @@
 {
-  "name": "budgeting-tool",
+  "name": "budgify",
   "version": "0.1.0",
   "private": true,
-  "description": "Self-hosted budgeting tool: connect bank accounts, track spending, and plan your way to savings goals.",
+  "description": "Budgify \u2014 self-hosted budgeting: connect bank accounts, track spending, and plan your way to savings goals.",
   "main": "src/server.js",
   "type": "commonjs",
   "engines": {
@@ -11,7 +11,8 @@
   "scripts": {
     "start": "node --disable-warning=ExperimentalWarning src/server.js",
     "dev": "node --disable-warning=ExperimentalWarning --watch src/server.js",
-    "test": "node --disable-warning=ExperimentalWarning --test \"test/*.test.js\""
+    "test": "node --disable-warning=ExperimentalWarning --test \"test/*.test.js\"",
+    "reset-password": "node --disable-warning=ExperimentalWarning scripts/reset-password.js"
   },
   "dependencies": {
     "dotenv": "^18.0.10",

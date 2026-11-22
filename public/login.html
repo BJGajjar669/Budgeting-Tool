@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sign in · Budgify</title>
+  <meta name="theme-color" content="#0D6B56" />
+  <link rel="icon" type="image/png" sizes="32x32" href="brand/favicon-32.png" />
+  <link rel="apple-touch-icon" href="brand/apple-touch-icon.png" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="login.css" />
+</head>
+<body class="auth-body">
+  <div class="auth">
+    <!-- Brand panel -->
+    <aside class="auth-brand" aria-hidden="true">
+      <div class="auth-brand-inner">
+        <div class="auth-logo">
+          <img src="brand/icon-192.png" alt="" width="64" height="64" />
+          <img src="brand/wordmark-dark.png" alt="" class="auth-wordmark" height="44" />
+        </div>
+        <p class="auth-tagline">Plan · Track · Save</p>
+        <h2 class="auth-headline">See where every dollar goes, and where it needs to go next.</h2>
+        <ul class="auth-points">
+          <li><span class="pt-icon"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M3 10h18M5 10v8m4.7-8v8m4.6-8v8M19 10v8M3 20h18M12 3 3 8h18z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></span>Connect your bank accounts securely</li>
+          <li><span class="pt-icon"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M5 20V12m7 8V5m7 15v-9" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></span>Track spending by category against your budgets</li>
+          <li><span class="pt-icon"><svg viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="4.5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/></svg></span>Get a monthly plan for every savings goal</li>
+        </ul>
+        <div class="auth-preview">
+          <div class="pv-head"><span>Emergency fund</span><span class="pv-tag"><svg width="12" height="12" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="#10B981"/><path d="m4.8 8.2 2.2 2.2 4.2-4.4" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>On track</span></div>
+          <div class="pv-amount">$6,150 <small>of $12,000</small></div>
+          <div class="pv-meter"><div style="width:51%"></div></div>
+          <div class="pv-foot"><span>$519 / month</span><span>Done Oct 2027</span></div>
+        </div>
+        <p class="auth-privacy">
+          <svg viewBox="0 0 24 24" width="14" height="14"><rect x="5" y="10.5" width="14" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+          Your data stays on this computer.
+        </p>
+      </div>
+    </aside>
+
+    <!-- Form panel -->
+    <main class="auth-main">
+      <div class="auth-mobile-logo">
+        <img src="brand/icon-192.png" alt="" width="40" height="40" />
+        <picture>
+          <source srcset="brand/wordmark-dark.png" media="(prefers-color-scheme: dark)" />
+          <img src="brand/wordmark.png" alt="Budgify" height="30" />
+        </picture>
+      </div>
+
+      <div class="auth-card" id="card" hidden>
+        <!-- Sign in -->
+        <form id="loginForm" novalidate hidden>
+          <h1>Welcome back</h1>
+          <p class="auth-sub">Sign in to your Budgify account.</p>
+          <div class="auth-alert" id="loginError" role="alert" hidden></div>
+          <label>Email
+            <input name="email" type="email" autocomplete="username" required autofocus />
+          </label>
+          <label>Password
+            <span class="pw-wrap">
+              <input name="password" type="password" autocomplete="current-password" required />
+              <button type="button" class="pw-toggle" aria-label="Show password" aria-pressed="false">Show</button>
+            </span>
+          </label>
+          <label class="check"><input type="checkbox" name="remember" checked /> Keep me signed in for 30 days</label>
+          <button class="btn primary block" type="submit">Sign in</button>
+          <details class="auth-help">
+            <summary>Forgot your password?</summary>
+            <p>Budgify runs on your own computer, so there's no reset email. On the computer running Budgify, open a terminal in the app's folder and run:</p>
+            <code class="cmd">npm run reset-password</code>
+          </details>
+        </form>
+
+        <!-- First run: create the account -->
+        <form id="setupForm" novalidate hidden>
+          <span class="auth-step">First-time setup</span>
+          <h1>Create your account</h1>
+          <p class="auth-sub">This account protects the financial data on this Budgify install. You'll use it to sign in from now on.</p>
+          <div class="auth-alert" id="setupError" role="alert" hidden></div>
+          <label>Your name
+            <input name="name" autocomplete="name" required autofocus />
+          </label>
+          <label>Email
+            <input name="email" type="email" autocomplete="username" required />
+          </label>
+          <label>Password
+            <span class="pw-wrap">
+              <input name="password" type="password" autocomplete="new-password" required aria-describedby="pwRules" />
+              <button type="button" class="pw-toggle" aria-label="Show password" aria-pressed="false">Show</button>
+            </span>
+          </label>
+          <ul class="pw-rules" id="pwRules">
+            <li data-rule="length"><span>At least <span class="min-len">10</span> characters</span></li>
+            <li data-rule="match"><span>Both passwords match</span></li>
+          </ul>
+          <label>Confirm password
+            <input name="confirm" type="password" autocomplete="new-password" required />
+          </label>
+          <button class="btn primary block" type="submit">Create account</button>
+        </form>
+      </div>
+
+      <p class="auth-foot">Budgify · Plan · Track · Save</p>
+    </main>
+  </div>
+  <script src="login.js"></script>
+</body>
+</html>

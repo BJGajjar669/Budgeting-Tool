@@ -13,6 +13,7 @@ const { monthSummary, baseline } = require('./analytics');
 const { buildPlan, resolveGoalBalances } = require('./planner');
 const { csvToTransactions, assignIds } = require('./csv');
 const { loadDemo } = require('./demo');
+const { createAuth } = require('./auth');
 const { todayStr, monthOf } = require('./dates');
 
 function createApp({ dataDir = process.env.DATA_DIR || path.join(__dirname, '..', 'data'), dbFile, plaidConfig, today } = {}) {
@@ -33,10 +34,49 @@ function createApp({ dataDir = process.env.DATA_DIR || path.join(__dirname, '..'
   });
 
   const app = express();
+  const auth = createAuth(db, { secureCookies: process.env.COOKIE_SECURE === 'true' });
+  const publicDir = path.join(__dirname, '..', 'public');
+
   app.disable('x-powered-by');
+  if (process.env.TRUST_PROXY) app.set('trust proxy', process.env.TRUST_PROXY);
+  app.use((_req, res, next) => {
+    res.set({
+      'Content-Security-Policy': [
+        "default-src 'self'",
+        "script-src 'self' https://cdn.plaid.com", // Plaid Link
+        "frame-src https://cdn.plaid.com",
+        "connect-src 'self' https://*.plaid.com",
+        "img-src 'self' data:",
+        "style-src 'self' 'unsafe-inline'",
+        "base-uri 'none'",
+        "form-action 'self'",
+        "frame-ancestors 'none'",
+      ].join('; '),
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'DENY',
+      'Referrer-Policy': 'no-referrer',
+    });
+    next();
+  });
   app.use(express.json({ limit: '1mb' }));
-  app.use(express.text({ type: ['text/csv', 'text/plain'], limit: '10mb' }));
-  app.use(express.static(path.join(__dirname, '..', 'public')));
+  app.use(express.text({ type: 'text/csv', limit: '10mb' }));
+  app.use(auth.sameOrigin);
+
+  // Pages: the dashboard needs a session; the sign-in page is for signed-out visitors.
+  const noStore = (res) => res.set('Cache-Control', 'no-store');
+  app.get(['/', '/index.html'], (req, res) => {
+    if (!auth.currentUser(req)) return res.redirect(302, '/login');
+    noStore(res).sendFile(path.join(publicDir, 'index.html'));
+  });
+  app.get(['/login', '/login.html'], (req, res) => {
+    if (auth.currentUser(req)) return res.redirect(302, '/');
+    noStore(res).sendFile(path.join(publicDir, 'login.html'));
+  });
+  app.use(express.static(publicDir, { index: false }));
+
+  // Sign-in endpoints are open; everything else under /api needs a session.
+  auth.routes(app);
+  app.use('/api', auth.requireUser);
 
   const bad = (res, msg, code = 400) => res.status(code).json({ error: msg });
   const num = (v) => (v === '' || v == null ? null : Number(v));
@@ -265,7 +305,7 @@ function createApp({ dataDir = process.env.DATA_DIR || path.join(__dirname, '..'
     res.status(err.status || 500).json({ error: msg });
   });
 
-  return { app, store, plaid, db };
+  return { app, store, plaid, db, auth };
 }
 
 if (require.main === module) {
@@ -273,7 +313,7 @@ if (require.main === module) {
   const host = process.env.HOST || '127.0.0.1';
   const { app, plaid } = createApp();
   app.listen(port, host, () => {
-    console.log(`Budgeting Tool running at http://${host === '0.0.0.0' ? 'localhost' : host}:${port}`);
+    console.log(`Budgify running at http://${host === '0.0.0.0' ? 'localhost' : host}:${port}`);
     console.log(plaid ? `Plaid: ${plaid.env} environment` : 'Plaid: not configured (demo data and CSV import still work)');
   });
 

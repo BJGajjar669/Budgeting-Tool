@@ -1,4 +1,7 @@
-# Budgeting Tool
+<p align="center"><img src="public/brand/icon-192.png" width="88" alt="" /><br /><img src="public/brand/wordmark.png" height="40" alt="Budgify" /></p>
+<p align="center"><strong>Plan · Track · Save</strong></p>
+
+# Budgify
 
 A self-hosted budgeting app that connects to your bank accounts, shows **where your money is going**, and works out **where it needs to go** to hit your savings goals.
 
@@ -23,7 +26,7 @@ npm install
 npm start            # → http://127.0.0.1:3000
 ```
 
-Click **Load demo data** to explore with six months of realistic sample data. Remove it from the Accounts tab when you're ready to use your own.
+The first visit asks you to **create your account** (name, email and a password of at least 10 characters). After that, Budgify always opens on the sign-in screen. Click **Load demo data** to explore with six months of realistic sample data. Remove it from the Accounts tab when you're ready to use your own.
 
 ## Connecting your bank accounts
 
@@ -49,9 +52,17 @@ Every bank lets you download transactions as CSV. On the Accounts tab, choose **
 4. **Surplus is allocated** to goals in priority order (then by nearest deadline). Any money left over speeds up the next unfinished goal.
 5. **When there's a gap,** the planner suggests trimming discretionary categories in proportion to their size. It cuts no category by more than 35% and touches no essentials. If the trims can't close the gap, it tells you how much is still missing, so you can move a date, lower a target or raise income. You can turn any suggested trim into a budget with one click.
 
+## Signing in
+
+- **One account per install.** The first visit creates it; nobody else can create a second one afterwards.
+- **Forgot your password?** There's no email server, so reset it from a terminal on the computer running Budgify: `npm run reset-password`. This signs out every device.
+- **Change password** and **Sign out** are in the menu under your initials (top right). Changing your password signs out your other devices.
+- "Keep me signed in" keeps a session for 30 days. Without it, you're signed out when you close the browser, or after 12 hours.
+
 ## Privacy & security
 
-- The server listens on `127.0.0.1` by default, so only your own computer can reach it. Don't expose it to a network: it has no login screen.
+- **Sign-in:** passwords are stored as salted scrypt hashes. Sessions use a random token in an HttpOnly, SameSite=Strict cookie, and only a hash of that token is stored. Five wrong passwords lock sign-in for 15 minutes. Cross-site requests are refused, and a strict Content-Security-Policy is sent with every page.
+- The server listens on `127.0.0.1` by default, so only your own computer can reach it. To reach it from your phone or another device, set `HOST=0.0.0.0`, but only behind HTTPS: put it behind a reverse proxy such as Caddy or nginx, and set `COOKIE_SECURE=true` and `TRUST_PROXY=1`. Your password and bank data must never travel over plain HTTP.
 - Bank access tokens are encrypted with AES-256-GCM. The key comes from `ENCRYPTION_KEY`; if that isn't set, a random key is generated into `data/.secret_key` (file mode 0600).
 - All data lives in `data/` (git-ignored). To back up, copy that folder. To wipe everything, delete it. To revoke the app's bank access, use **Disconnect** on the Accounts tab, which also revokes it with Plaid.
 - No analytics and no third-party scripts, apart from Plaid Link, which loads from `cdn.plaid.com` only when you click *Connect a bank*.
@@ -60,7 +71,8 @@ Every bank lets you download transactions as CSV. On the Accounts tab, choose **
 
 ```bash
 npm run dev     # restart on file changes
-npm test        # unit + API tests (uses a fake Plaid client, no network needed)
+npm test        # unit, auth and API tests (uses a fake Plaid client, no network needed)
+npm run reset-password
 ```
 
 ```
@@ -73,10 +85,15 @@ src/
   planner.js     savings plan: allocation, projections, suggested trims
   csv.js         CSV statement import       demo.js   sample data
   crypto.js      token encryption           dates.js  calendar helpers
-public/          dashboard (vanilla JS, no build step)
+  auth.js        accounts, sessions, lockout, CSRF/origin checks
+public/          dashboard + sign-in page (vanilla JS, no build step)
+  brand/         logo, wordmarks and favicons (generated from brand/budgify-logo.png)
+scripts/         reset-password.js, build_brand_assets.py (regenerate brand assets; needs Pillow)
 test/            node:test suites
 ```
 
 ### API
 
-`GET /api/status` · `GET /api/summary?month=YYYY-MM` · `GET /api/plan` · `GET|POST|PUT|DELETE /api/goals` · `GET|PUT /api/budgets` · `GET /api/transactions?month=&category=&account=&q=` · `PATCH /api/transactions/:id` · `GET|POST|DELETE /api/rules` · `GET /api/accounts` · `POST /api/import/csv?account=Name` · `POST /api/plaid/link-token` · `POST /api/plaid/exchange` · `POST /api/sync` · `GET|DELETE /api/connections` · `POST|DELETE /api/demo`
+Everything except `/api/auth/*` requires a signed-in session.
+
+`GET /api/auth/state` · `POST /api/auth/setup|login|logout|password` · `GET /api/status` · `GET /api/summary?month=YYYY-MM` · `GET /api/plan` · `GET|POST|PUT|DELETE /api/goals` · `GET|PUT /api/budgets` · `GET /api/transactions?month=&category=&account=&q=` · `PATCH /api/transactions/:id` · `GET|POST|DELETE /api/rules` · `GET /api/accounts` · `POST /api/import/csv?account=Name` · `POST /api/plaid/link-token` · `POST /api/plaid/exchange` · `POST /api/sync` · `GET|DELETE /api/connections` · `POST|DELETE /api/demo`
