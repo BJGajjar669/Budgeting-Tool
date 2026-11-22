@@ -2,8 +2,8 @@
 # Install (or update) Budgify on an Ubuntu/Debian server so it runs 24/7,
 # reachable only from your own devices through Tailscale.
 #
-#   git clone https://github.com/BJGajjar669/Budgeting-Tool.git budgify
-#   cd budgify && sudo ./deploy/install.sh
+#   git clone git@github.com:BJGajjar669/Budgeting-Tool.git budgify   # private repo: needs a deploy key,
+#   cd budgify && sudo ./deploy/install.sh                            # see deploy/README.md step 3
 #
 # Re-run the same command after `git pull` to update. Your data and settings are kept.
 #

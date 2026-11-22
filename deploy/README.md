@@ -45,11 +45,22 @@ ssh -i path/to/downloaded-key.key ubuntu@YOUR_PUBLIC_IP
 
 > On a Mac, run `chmod 600 path/to/downloaded-key.key` first if ssh complains about permissions.
 
-Then paste this:
+Your repository is **private**, so the server needs permission to download it. Give it a **deploy key**: a key that can only *read* this one repository. Paste this on the server:
+
+```bash
+ssh-keygen -t ed25519 -N "" -C budgify-server -f ~/.ssh/budgify_deploy
+printf 'Host github.com\n  IdentityFile ~/.ssh/budgify_deploy\n  IdentitiesOnly yes\n  StrictHostKeyChecking accept-new\n' >> ~/.ssh/config
+chmod 600 ~/.ssh/config
+cat ~/.ssh/budgify_deploy.pub
+```
+
+Copy the line it prints (it starts with `ssh-ed25519`). On GitHub, open your repository, go to **Settings → Deploy keys → Add deploy key**, paste it, name it "Budgify server", **leave "Allow write access" unticked**, and click **Add key**.
+
+Then install:
 
 ```bash
 sudo apt-get update && sudo apt-get install -y git
-git clone -b claude/budgeting-tool-bank-integration-cj476g https://github.com/BJGajjar669/Budgeting-Tool.git budgify
+git clone -b claude/budgeting-tool-bank-integration-cj476g git@github.com:BJGajjar669/Budgeting-Tool.git budgify
 cd budgify && sudo ./deploy/install.sh
 ```
 

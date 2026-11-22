@@ -54,10 +54,10 @@ Every bank lets you download transactions as CSV. On the Accounts tab, choose **
 
 ## Run it 24/7 in the cloud (free, private to you)
 
-[`deploy/README.md`](deploy/README.md) walks through putting Budgify on a free Oracle Cloud server, reachable from anywhere but only by your own devices (via Tailscale). It takes one install command:
+[`deploy/README.md`](deploy/README.md) walks through putting Budgify on a free Oracle Cloud server, reachable from anywhere but only by your own devices (via Tailscale). The repository is private, so the guide starts by giving the server a read-only deploy key. After that it's one install command:
 
 ```bash
-git clone -b claude/budgeting-tool-bank-integration-cj476g https://github.com/BJGajjar669/Budgeting-Tool.git budgify
+git clone -b claude/budgeting-tool-bank-integration-cj476g git@github.com:BJGajjar669/Budgeting-Tool.git budgify
 cd budgify && sudo ./deploy/install.sh
 ```
 
