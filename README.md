@@ -52,6 +52,15 @@ Every bank lets you download transactions as CSV. On the Accounts tab, choose **
 4. **Surplus is allocated** to goals in priority order (then by nearest deadline). Any money left over speeds up the next unfinished goal.
 5. **When there's a gap,** the planner suggests trimming discretionary categories in proportion to their size. It cuts no category by more than 35% and touches no essentials. If the trims can't close the gap, it tells you how much is still missing, so you can move a date, lower a target or raise income. You can turn any suggested trim into a budget with one click.
 
+## Run it 24/7 in the cloud (free, private to you)
+
+[`deploy/README.md`](deploy/README.md) walks through putting Budgify on a free Oracle Cloud server, reachable from anywhere but only by your own devices (via Tailscale). It takes one install command:
+
+```bash
+git clone -b claude/budgeting-tool-bank-integration-cj476g https://github.com/BJGajjar669/Budgeting-Tool.git budgify
+cd budgify && sudo ./deploy/install.sh
+```
+
 ## Using Budgify on your phone
 
 Budgify runs on your computer, and your phone opens it in the browser, so there's nothing to install from an app store. Both devices look at the same single copy of your data, so they always match. The phone can reach Budgify only while the computer is on and Budgify is running.

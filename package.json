@@ -12,7 +12,8 @@
     "start": "node --disable-warning=ExperimentalWarning src/server.js",
     "dev": "node --disable-warning=ExperimentalWarning --watch src/server.js",
     "test": "node --disable-warning=ExperimentalWarning --test \"test/*.test.js\"",
-    "reset-password": "node --disable-warning=ExperimentalWarning scripts/reset-password.js"
+    "reset-password": "node --disable-warning=ExperimentalWarning scripts/reset-password.js",
+    "backup": "node --disable-warning=ExperimentalWarning scripts/backup.js"
   },
   "dependencies": {
     "dotenv": "^18.0.10",
