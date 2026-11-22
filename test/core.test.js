@@ -159,3 +159,15 @@ test('dates: calendar-aware month math round-trips', () => {
   assert.equal(addFractionalMonths('2026-11-22', monthsBetween('2026-11-22', '2027-10-31')), '2027-10-31');
   assert.equal(addFractionalMonths('2026-01-31', 1), '2026-02-28');
 });
+
+test('startup hints explain why Plaid is not configured', () => {
+  const { startupHints } = require('../src/server');
+  const files = (...present) => (f) => present.some((p) => f.endsWith(p));
+  const base = { plaid: null, dataDir: '/home/me/data', cwd: '/app', env: {} };
+  assert.match(startupHints({ ...base, exists: files() })[0], /No \.env file in \/app/);
+  assert.match(startupHints({ ...base, exists: files('.env.txt') })[0], /Rename it to "\.env"/);
+  assert.match(startupHints({ ...base, exists: files('.env'), env: { PLAID_CLIENT_ID: 'x' } })[0], /PLAID_SECRET is empty/);
+  assert.deepEqual(startupHints({ ...base, plaid: {}, exists: files('.env') }), []);
+  const od = startupHints({ ...base, plaid: {}, dataDir: 'C:\\Users\\me\\OneDrive\\Documents\\Budgify\\data', exists: files('.env') });
+  assert.match(od[0], /cloud-synced folder/);
+});

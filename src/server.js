@@ -316,16 +316,37 @@ function createApp({ dataDir = process.env.DATA_DIR || path.join(__dirname, '..'
     res.status(err.status || 500).json({ error: msg });
   });
 
-  return { app, store, plaid, db, auth };
+  return { app, store, plaid, db, auth, dataDir };
+}
+
+/** Plain-language pointers printed at startup when something needs the user's attention. */
+function startupHints({ plaid, dataDir, cwd = process.cwd(), env = process.env, exists = require('node:fs').existsSync }) {
+  const hints = [];
+  const envFile = path.join(cwd, '.env');
+  if (!plaid) {
+    if (!exists(envFile) && exists(`${envFile}.txt`)) {
+      hints.push(`Found ".env.txt" in ${cwd}. Rename it to ".env" (Windows added .txt), then restart.`);
+    } else if (!exists(envFile)) {
+      hints.push(`No .env file in ${cwd}. Create one from .env.example and add your Plaid keys (see README: "Connecting your bank accounts").`);
+    } else {
+      const missing = ['PLAID_CLIENT_ID', 'PLAID_SECRET'].filter((k) => !env[k]);
+      hints.push(`.env found, but ${missing.join(' and ')} ${missing.length > 1 ? 'are' : 'is'} empty. Fill ${missing.length > 1 ? 'them' : 'it'} in, save, and restart.`);
+    }
+  }
+  if (/onedrive|dropbox|google drive|icloud/i.test(dataDir)) {
+    hints.push(`Your data folder (${dataDir}) is inside a cloud-synced folder, so your financial data is uploaded there and the database can be damaged by syncing. Set DATA_DIR in .env to a folder outside it.`);
+  }
+  return hints;
 }
 
 if (require.main === module) {
   const port = Number(process.env.PORT) || 3000;
   const host = process.env.HOST || '127.0.0.1';
-  const { app, plaid } = createApp();
+  const { app, plaid, dataDir } = createApp();
   app.listen(port, host, () => {
     console.log(`Budgify running at http://${host === '0.0.0.0' ? 'localhost' : host}:${port}`);
     console.log(plaid ? `Plaid: ${plaid.env} environment` : 'Plaid: not configured (demo data and CSV import still work)');
+    for (const hint of startupHints({ plaid, dataDir })) console.log(`  -> ${hint}`);
   });
 
   // Keep bank data fresh while the app is running.
@@ -340,4 +361,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { createApp };
+module.exports = { createApp, startupHints };
