@@ -5,3 +5,11 @@ data/
 *.db-wal
 *.db-shm
 .DS_Store
+# Never commit financial data: bank statement exports, backups, archives
+*.csv
+*.ofx
+*.qfx
+backups/
+*.tgz
+*.tar.gz
+budgify-backups*
