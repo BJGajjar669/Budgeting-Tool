@@ -34,7 +34,7 @@ function start() {
   return { ...ctx, base, browser, close: () => server.close() };
 }
 
-const ACCOUNT = { name: 'Bhavin', email: 'Owner@Example.com', password: 'long enough password' };
+const ACCOUNT = { name: 'Alex Example', email: 'Owner@Example.com', password: 'long enough password' };
 
 test('passwords are salted scrypt hashes', () => {
   const a = hashPassword('hunter2hunter2');
@@ -95,7 +95,7 @@ test('sign in, sign out, and session cookies', async (t) => {
 
   const short = await b('POST', '/api/auth/login', { email: 'owner@example.com', password: ACCOUNT.password, remember: false });
   assert.equal(short.status, 200);
-  assert.equal(short.body.user.name, 'Bhavin');
+  assert.equal(short.body.user.name, 'Alex Example');
   assert.doesNotMatch(short.setCookie, /Max-Age/, 'unticked "remember me" gives a browser-session cookie');
   const long = await s.browser()('POST', '/api/auth/login', { email: ACCOUNT.email, password: ACCOUNT.password, remember: true });
   assert.match(long.setCookie, /Max-Age=2592000/);
