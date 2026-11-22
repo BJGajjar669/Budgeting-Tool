@@ -132,6 +132,8 @@ test('cross-site requests are refused', async (t) => {
   assert.equal(evil.status, 403);
   assert.equal((await b('POST', '/api/demo', undefined, { origin: s.base })).status, 200);
   assert.equal((await b('POST', '/api/demo')).status, 200); // no Origin header (curl, scripts)
+  // Without TRUST_PROXY a forwarded host is not believed.
+  assert.equal((await b('POST', '/api/demo', undefined, { origin: 'https://budgify.example.ts.net', 'x-forwarded-host': 'budgify.example.ts.net' })).status, 403);
 });
 
 test('changing the password signs out other sessions', async (t) => {
@@ -163,4 +165,27 @@ test('reset-password helper and security headers', async (t) => {
   s.auth.resetPassword(null, 'reset via the terminal');
   assert.equal((await b('GET', '/api/accounts')).status, 401);
   assert.equal((await b('POST', '/api/auth/login', { email: ACCOUNT.email, password: 'reset via the terminal' })).status, 200);
+});
+
+test('behind a trusted HTTPS proxy the forwarded host counts as same-origin', async (t) => {
+  process.env.TRUST_PROXY = '1';
+  const s = start();
+  delete process.env.TRUST_PROXY;
+  t.after(s.close);
+  const b = s.browser();
+  await b('POST', '/api/auth/setup', ACCOUNT);
+  const viaProxy = { origin: 'https://laptop.tail1234.ts.net', 'x-forwarded-host': 'laptop.tail1234.ts.net' };
+  assert.equal((await b('POST', '/api/demo', undefined, viaProxy)).status, 200);
+  assert.equal((await b('POST', '/api/demo', undefined, { ...viaProxy, origin: 'https://evil.example' })).status, 403);
+});
+
+test('installable on a phone home screen', async (t) => {
+  const s = start();
+  t.after(s.close);
+  const res = await fetch(`${s.base}/manifest.webmanifest`);
+  assert.equal(res.status, 200);
+  const m = await res.json();
+  assert.equal(m.name, 'Budgify');
+  assert.equal(m.display, 'standalone');
+  for (const icon of m.icons) assert.equal((await fetch(`${s.base}/${icon.src}`)).status, 200);
 });

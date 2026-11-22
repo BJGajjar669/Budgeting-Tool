@@ -34,7 +34,7 @@ function createApp({ dataDir = process.env.DATA_DIR || path.join(__dirname, '..'
   });
 
   const app = express();
-  const auth = createAuth(db, { secureCookies: process.env.COOKIE_SECURE === 'true' });
+  const auth = createAuth(db, { secureCookies: process.env.COOKIE_SECURE === 'true', trustProxy: !!process.env.TRUST_PROXY });
   const publicDir = path.join(__dirname, '..', 'public');
 
   app.disable('x-powered-by');

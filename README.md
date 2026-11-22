@@ -52,6 +52,25 @@ Every bank lets you download transactions as CSV. On the Accounts tab, choose **
 4. **Surplus is allocated** to goals in priority order (then by nearest deadline). Any money left over speeds up the next unfinished goal.
 5. **When there's a gap,** the planner suggests trimming discretionary categories in proportion to their size. It cuts no category by more than 35% and touches no essentials. If the trims can't close the gap, it tells you how much is still missing, so you can move a date, lower a target or raise income. You can turn any suggested trim into a budget with one click.
 
+## Using Budgify on your phone
+
+Budgify runs on your computer, and your phone opens it in the browser, so there's nothing to install from an app store. Both devices look at the same single copy of your data, so they always match. The phone can reach Budgify only while the computer is on and Budgify is running.
+
+The simplest secure setup is [Tailscale](https://tailscale.com), which is free for personal use. It gives Budgify a private HTTPS address that only your own devices can reach:
+
+1. Install Tailscale on the computer and on your phone, and sign in to the same Tailscale account on both.
+2. In the Tailscale admin console, under **DNS**, turn on **MagicDNS** and **HTTPS certificates**.
+3. Add these two lines to `.env`, then restart Budgify:
+   ```
+   COOKIE_SECURE=true
+   TRUST_PROXY=1
+   ```
+4. On the computer, run `tailscale serve --bg 3000`. It prints an address like `https://your-computer.tail1234.ts.net`.
+5. Open that address on your phone and sign in with your usual email and password.
+6. Add it to your home screen. On iPhone (Safari): **Share → Add to Home Screen**. On Android (Chrome): **⋮ → Add to Home screen / Install app**. Budgify then opens full-screen with its own icon.
+
+Keep `HOST=127.0.0.1`: Tailscale forwards to it locally, so Budgify is never exposed on your Wi-Fi or the internet.
+
 ## Signing in
 
 - **One account per install.** The first visit creates it; nobody else can create a second one afterwards.

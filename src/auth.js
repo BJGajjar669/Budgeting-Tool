@@ -70,7 +70,7 @@ function parseCookies(header = '') {
   return out;
 }
 
-function createAuth(db, { now = () => Date.now(), secureCookies = false } = {}) {
+function createAuth(db, { now = () => Date.now(), secureCookies = false, trustProxy = false } = {}) {
   db.exec(SCHEMA);
   const q = (sql) => db.prepare(sql);
   const failures = new Map(); // ip -> [timestamps]
@@ -124,7 +124,11 @@ function createAuth(db, { now = () => Date.now(), secureCookies = false } = {}) 
     if (origin) {
       let host;
       try { host = new URL(origin).host; } catch { host = null; }
-      if (host !== req.headers.host) return res.status(403).json({ error: 'Cross-site request blocked' });
+      // Behind a trusted HTTPS proxy (e.g. `tailscale serve`, Caddy) the public host may only
+      // arrive in X-Forwarded-Host.
+      const allowed = [req.headers.host];
+      if (trustProxy && req.headers['x-forwarded-host']) allowed.push(String(req.headers['x-forwarded-host']).split(',')[0].trim());
+      if (!allowed.includes(host)) return res.status(403).json({ error: 'Cross-site request blocked' });
     }
     next();
   }
