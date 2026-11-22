@@ -32,11 +32,26 @@ The first visit asks you to **create your account** (name, email and a password 
 
 Bank connections go through [Plaid](https://plaid.com), which supports more than 12,000 banks, credit unions and card issuers in the US, Canada, the UK and Europe. Plaid's login screen opens in your browser. Your bank password goes to Plaid and the bank, never to this app.
 
-1. Sign up at <https://dashboard.plaid.com/signup>, then copy your **client ID** and **secret** from *Developers → Keys*.
-2. `cp .env.example .env` and fill in `PLAID_CLIENT_ID` and `PLAID_SECRET`.
-3. **Try sandbox first:** leave `PLAID_ENV=sandbox`, restart, and click **Connect a bank**. Pick any bank and log in with `user_good` / `pass_good`, or click **Add test bank (sandbox)** to skip the login.
-4. **Go live:** request Production access in the Plaid dashboard. Plaid's free tier covers a small number of real connections for personal use. Then set `PLAID_ENV=production` and your production secret, and restart.
-   - Some banks (Chase, Wells Fargo, Capital One, …) use an OAuth login. For those, add `PLAID_REDIRECT_URI` to `.env` and register the same URI under *Allowed redirect URIs* in the Plaid dashboard.
+### Free: Plaid's Trial plan (10 real bank connections)
+
+New Plaid accounts in the US and Canada (created on or after April 15, 2026) get Plaid's free **Trial plan**. It includes **10 real bank connections**, and checking an existing connection for new transactions is unlimited, so daily automatic syncing costs nothing. That's plenty for personal use: one connection covers every account you have at a bank.
+
+1. Sign up at <https://dashboard.plaid.com/signup>. Plaid may ask a few questions about your "company"; describe it as a personal budgeting app for your own use.
+2. Under *Developers → Keys*, copy your **client ID** and the **secret** for Production (live data).
+3. **Don't submit Plaid's full Production application.** It's for paid plans, and Plaid says a pending or approved application makes the free Trial unavailable.
+4. `cp .env.example .env` and set:
+   ```
+   PLAID_CLIENT_ID=your-client-id
+   PLAID_SECRET=your-production-secret
+   PLAID_ENV=production
+   ```
+5. Restart Budgify, go to **Accounts → Connect a bank**, search for your bank (e.g. *Georgia's Own Credit Union*), and log in with your online-banking username and password. Your password goes to Plaid and the bank, never to Budgify.
+
+**Spend your 10 connections carefully.** Plaid counts every connection ever made: disconnecting doesn't give one back, and connecting the same bank twice uses two. Budgify shows how many you've used, warns before you connect a bank you already have, and stops at the limit. If a bank stops syncing (after a password change, for example), use **Reconnect**, which repairs the existing connection for free. On a paid Plaid plan, set `PLAID_ITEM_LIMIT=0` to remove the guard.
+
+*Want to try it with fake banks first?* Use your Sandbox secret with `PLAID_ENV=sandbox`, then click **Add test bank (sandbox)**, or log in to any bank with `user_good` / `pass_good`. Sandbox connections don't count toward the 10.
+
+Some big banks (Chase, Wells Fargo, Capital One, …) log you in on their own website ("OAuth"). For those, add `PLAID_REDIRECT_URI` to `.env` (your Budgify address, e.g. `https://budgify-vm.tail1234.ts.net/`) and register the same address under *Allowed redirect URIs* in the Plaid dashboard.
 
 Once connected, the app pulls up to 2 years of history and then syncs incrementally (new, changed and removed transactions) every `SYNC_INTERVAL_HOURS`, or whenever you click **Sync now**. If a bank asks you to log in again (after a password change, for example), a **Reconnect** button appears on the Accounts tab.
 

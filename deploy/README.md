@@ -101,7 +101,7 @@ Your server now has **no open ports on the internet**. Budgify is only reachable
 budgify settings      # opens the settings file; add PLAID_CLIENT_ID and PLAID_SECRET, save, and it restarts
 ```
 
-Set `PLAID_ENV=production` once Plaid approves you for live data. For banks with an OAuth login (Chase, Wells Fargo, …), also set `PLAID_REDIRECT_URI=https://budgify-vm.tail1234.ts.net/` (your own address) and add the same URI in the Plaid dashboard.
+For real accounts on Plaid's **free Trial plan** (10 bank connections), use your *Production* secret with `PLAID_ENV=production`, and **don't** submit Plaid's full Production application: it makes the free Trial unavailable. The main [README](../README.md#connecting-your-bank-accounts) has the details. For banks with an OAuth login (Chase, Wells Fargo, …), also set `PLAID_REDIRECT_URI=https://budgify-vm.tail1234.ts.net/` (your own address) and add the same URI in the Plaid dashboard.
 
 ## Everyday commands (on the server)
 

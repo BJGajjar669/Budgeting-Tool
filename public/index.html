@@ -167,12 +167,13 @@
         <p>Bank connections use <strong>Plaid</strong>, which works with 12,000+ banks and card issuers. To turn it on:</p>
         <ol>
           <li>Create a free account at <a href="https://dashboard.plaid.com/signup" target="_blank" rel="noopener">dashboard.plaid.com</a> and copy your <em>client ID</em> and <em>secret</em> from <em>Developers → Keys</em>.</li>
-          <li>Copy <code>.env.example</code> to <code>.env</code> and fill in <code>PLAID_CLIENT_ID</code> and <code>PLAID_SECRET</code>. Start with <code>PLAID_ENV=sandbox</code> to try it with fake banks, then switch to <code>production</code> for your real accounts.</li>
+          <li>Copy <code>.env.example</code> to <code>.env</code> and fill in <code>PLAID_CLIENT_ID</code> and <code>PLAID_SECRET</code>. For your real accounts, use your <em>Production</em> secret with <code>PLAID_ENV=production</code>. New Plaid accounts get a free Trial plan with 10 real bank connections. Don't submit Plaid's full Production application; it makes the free Trial unavailable.</li>
           <li>Restart the app.</li>
         </ol>
         <p class="muted small">Until then you can import CSV statements below, or load demo data to explore.</p>
       </div>
       <div class="tiles" id="netWorth"></div>
+      <p class="muted small" id="plaidQuota" hidden></p>
       <div id="connections"></div>
       <div class="card flush">
         <div class="table-wrap">

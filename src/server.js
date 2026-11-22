@@ -85,11 +85,17 @@ function createApp({ dataDir = process.env.DATA_DIR || path.join(__dirname, '..'
   const requirePlaid = (res) => (plaid ? true : (bad(res, 'Bank connections are not configured. Add PLAID_CLIENT_ID and PLAID_SECRET to .env and restart.', 503), false));
 
   // ---- status --------------------------------------------------------------
+  // Plaid's free Trial plan allows 10 Production connections in total (disconnecting doesn't
+  // return a slot). PLAID_ITEM_LIMIT=0 turns the guard off, e.g. on a paid plan.
+  const itemLimit = () => (plaid?.env === 'production' ? Number(process.env.PLAID_ITEM_LIMIT ?? 10) || 0 : 0);
+
   app.get('/api/status', (_req, res) => {
     res.json({
       today: now(),
       plaidConfigured: !!plaid,
       plaidEnv: plaid?.env ?? null,
+      plaidItemLimit: itemLimit(),
+      plaidItemsUsed: plaid ? store.plaidItemsUsed(plaid.env) : 0,
       demoLoaded: store.hasDemo(),
       ...store.counts(),
     });
@@ -100,7 +106,12 @@ function createApp({ dataDir = process.env.DATA_DIR || path.join(__dirname, '..'
   // ---- bank connections (Plaid) -------------------------------------------
   app.post('/api/plaid/link-token', async (req, res) => {
     if (!requirePlaid(res)) return;
-    res.json({ link_token: await plaid.createLinkToken({ itemId: req.body?.itemId }) });
+    const itemId = req.body?.itemId;
+    const limit = itemLimit();
+    if (!itemId && limit && store.plaidItemsUsed(plaid.env) >= limit) {
+      return bad(res, `You've used all ${limit} bank connections on Plaid's free plan. Use "Reconnect" to repair an existing one, or upgrade your Plaid plan (then set PLAID_ITEM_LIMIT to match).`, 409);
+    }
+    res.json({ link_token: await plaid.createLinkToken({ itemId }) });
   });
 
   app.post('/api/plaid/exchange', async (req, res) => {

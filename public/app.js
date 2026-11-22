@@ -455,11 +455,17 @@ async function loadAccounts() {
   return r;
 }
 async function renderAccounts() {
+  await refreshStatus(); // connection counts can change between visits
   const [r, conns] = await Promise.all([loadAccounts(), api('/api/connections')]);
   const plaidOn = state.status.plaidConfigured;
   $('#plaidSetup').hidden = plaidOn;
   $('#connectBtn').hidden = !plaidOn;
   $('#sandboxBtn').hidden = !(plaidOn && state.status.plaidEnv === 'sandbox');
+  const { plaidItemLimit: limit, plaidItemsUsed: used } = state.status;
+  $('#plaidQuota').hidden = !(plaidOn && limit);
+  if (limit) {
+    $('#plaidQuota').innerHTML = `${used >= limit ? statusTag('over', 'No free connections left') + ' · ' : ''}Bank connections used on Plaid's free plan: <strong>${used} of ${limit}</strong>. Disconnecting a bank doesn't give a connection back, so use <em>Reconnect</em> to repair one.`;
+  }
   $('#netWorth').innerHTML = r.accounts.length
     ? tile('Cash &amp; investments', money(r.assets)) + tile('Card &amp; loan balances', money(r.debts)) + tile('Net worth', money(r.netWorth))
     : '';
@@ -478,7 +484,8 @@ async function renderAccounts() {
     : `<tr><td colspan="5">${emptyState('No accounts yet', plaidOn ? 'Connect a bank to get started.' : 'Import a CSV or load demo data below.')}</td></tr>`;
 
   for (const b of $$('[data-disconnect]')) b.addEventListener('click', async () => {
-    if (!confirm('Disconnect this bank? Its accounts and transactions will be removed from this app.')) return;
+    const slotNote = state.status.plaidItemLimit ? '\n\nOn Plaid\'s free plan this does NOT give you a connection back.' : '';
+    if (!confirm(`Disconnect this bank? Its accounts and transactions will be removed from this app.${slotNote}`)) return;
     await api(`/api/connections/${encodeURIComponent(b.dataset.disconnect)}`, { method: 'DELETE' }).catch(fail);
     await refreshStatus();
     renderAccounts().catch(fail);
@@ -558,7 +565,7 @@ async function openPlaidLink(itemId, receivedRedirectUri) {
         } else {
           toast(`Connecting ${metadata.institution?.name || 'your bank'}… this can take a moment`);
           await api('/api/plaid/exchange', { method: 'POST', body: { public_token, institution: metadata.institution } });
-          toast(`${metadata.institution?.name || 'Bank'} connected`);
+          toast(`${metadata.institution?.name || 'Bank'} connected. Transactions can take a few minutes to arrive — click "Sync now" if they're not there yet.`);
         }
         await refreshStatus();
         renderAccounts().catch(fail);
@@ -568,7 +575,18 @@ async function openPlaidLink(itemId, receivedRedirectUri) {
   });
   handler.open();
 }
-$('#connectBtn').addEventListener('click', () => openPlaidLink().catch(fail));
+$('#connectBtn').addEventListener('click', async () => {
+  await refreshStatus().catch(() => {});
+  const { plaidItemLimit: limit, plaidItemsUsed: used } = state.status;
+  if (limit && used >= limit) return toast(`You've used all ${limit} free bank connections. Use Reconnect to repair an existing one.`);
+  const conns = await api('/api/connections').catch(() => []);
+  if (limit && conns.length) {
+    const names = conns.map((c) => c.institution_name || 'a bank').join(', ');
+    const ok = confirm(`Already connected: ${names}.\n\nConnecting the same bank again uses another of your ${limit - used} remaining free connections. If a connection stopped working, press Cancel and use "Reconnect" instead.\n\nConnect a new bank?`);
+    if (!ok) return;
+  }
+  openPlaidLink().catch(fail);
+});
 $('#sandboxBtn').addEventListener('click', async (e) => {
   e.target.disabled = true;
   try {
@@ -601,7 +619,7 @@ async function refreshStatus() {
   state.status = await api('/api/status');
   $('#syncBtn').hidden = !state.status.plaidConfigured;
   const b = $('#banner');
-  if (!state.status.transactions) {
+  if (!state.status.transactions && !state.status.accounts) {
     b.hidden = false;
     b.innerHTML = `<strong>Welcome!</strong><span>${state.status.plaidConfigured ? 'Connect a bank account' : 'Import a CSV statement'} to start tracking, or explore with demo data first.</span>
       <span class="spacer"></span><button class="btn" data-goto="accounts">${state.status.plaidConfigured ? 'Connect a bank' : 'Add accounts'}</button><button class="btn primary" id="bannerDemo">Load demo data</button>`;

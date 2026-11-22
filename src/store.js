@@ -166,6 +166,14 @@ function createStore(db) {
         db.exec(`DELETE FROM accounts WHERE source = 'demo'`); // cascades to transactions
       });
     },
+    logPlaidItem(id, institutionName, env) {
+      q(`INSERT OR IGNORE INTO plaid_item_log (item_id, institution_name, env) VALUES (?, ?, ?)`)
+        .run(id, institutionName ?? null, env ?? null);
+    },
+    /** Connections created in this Plaid environment (unknown-env rows from older installs count too). */
+    plaidItemsUsed(env) {
+      return q('SELECT COUNT(*) AS n FROM plaid_item_log WHERE env = ? OR env IS NULL').get(env).n;
+    },
     counts() {
       return q(`SELECT (SELECT COUNT(*) FROM accounts) AS accounts,
                        (SELECT COUNT(*) FROM transactions) AS transactions,

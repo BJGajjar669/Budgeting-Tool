@@ -16,6 +16,15 @@ CREATE TABLE IF NOT EXISTS items (
   created_at       TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- Every bank connection ever created, kept after disconnecting: Plaid's free Trial plan
+-- allows 10 per team and removing one does not give the slot back.
+CREATE TABLE IF NOT EXISTS plaid_item_log (
+  item_id          TEXT PRIMARY KEY,
+  institution_name TEXT,
+  env              TEXT,
+  created_at       TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS accounts (
   id                TEXT PRIMARY KEY,
   item_id           TEXT REFERENCES items(id) ON DELETE CASCADE,
@@ -79,6 +88,9 @@ function openDb(file) {
   const db = new DatabaseSync(file);
   db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
   db.exec(SCHEMA);
+  // Installs from before the log existed: count their current connections.
+  db.exec(`INSERT OR IGNORE INTO plaid_item_log (item_id, institution_name)
+           SELECT id, institution_name FROM items`);
   return db;
 }
 

@@ -38,10 +38,10 @@ function fakePlaid() {
   };
 }
 
-async function setup() {
+async function setup({ env = 'sandbox' } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'budget-test-'));
   const client = fakePlaid();
-  const ctx = createApp({ dataDir: dir, today: '2026-11-10', plaidConfig: { client, env: 'sandbox' } });
+  const ctx = createApp({ dataDir: dir, today: '2026-11-10', plaidConfig: { client, env } });
   const server = ctx.app.listen(0);
   const base = `http://127.0.0.1:${server.address().port}`;
   let cookie = null;
@@ -162,4 +162,37 @@ test('demo data loads, plans, and clears', async (t) => {
   await s.call('DELETE', '/api/demo');
   const after = (await s.call('GET', '/api/status')).body;
   assert.deepEqual([after.accounts, after.transactions, after.goals], [0, 0, 0]);
+});
+
+test("Plaid free Trial plan: connections are counted for good and capped", async (t) => {
+  process.env.PLAID_ITEM_LIMIT = '1';
+  const s = await setup({ env: 'production' });
+  t.after(() => { delete process.env.PLAID_ITEM_LIMIT; s.close(); });
+
+  let st = (await s.call('GET', '/api/status')).body;
+  assert.deepEqual([st.plaidItemLimit, st.plaidItemsUsed], [1, 0]);
+  assert.equal((await s.call('POST', '/api/plaid/link-token', {})).status, 200);
+  await s.call('POST', '/api/plaid/exchange', { public_token: 'public-x', institution: { institution_id: 'ins_113805', name: "Georgia's Own Credit Union" } });
+  assert.equal((await s.call('GET', '/api/status')).body.plaidItemsUsed, 1);
+
+  // Limit reached: no new connections, but repairing the existing one still works.
+  const blocked = await s.call('POST', '/api/plaid/link-token', {});
+  assert.equal(blocked.status, 409);
+  assert.match(blocked.body.error, /Reconnect/);
+  assert.equal((await s.call('POST', '/api/plaid/link-token', { itemId: 'item1' })).status, 200);
+
+  // Disconnecting doesn't give the slot back (Plaid doesn't either).
+  await s.call('DELETE', '/api/connections/item1');
+  st = (await s.call('GET', '/api/status')).body;
+  assert.equal(st.plaidItemsUsed, 1);
+  assert.equal((await s.call('POST', '/api/plaid/link-token', {})).status, 409);
+});
+
+test('sandbox connections are not counted against the free plan', async (t) => {
+  const s = await setup();
+  t.after(s.close);
+  await s.call('POST', '/api/plaid/exchange', { public_token: 'public-x' });
+  const st = (await s.call('GET', '/api/status')).body;
+  assert.equal(st.plaidItemLimit, 0);
+  assert.equal((await s.call('POST', '/api/plaid/link-token', {})).status, 200);
 });

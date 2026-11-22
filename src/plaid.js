@@ -46,6 +46,7 @@ function createPlaid({ clientId, secret, env = 'sandbox', countryCodes = ['US'],
       institution_id: institution?.institution_id,
       institution_name: institution?.name,
     });
+    store.logPlaidItem(data.item_id, institution?.name, env);
     await syncItem(data.item_id);
     return data.item_id;
   }
