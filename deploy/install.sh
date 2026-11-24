@@ -40,8 +40,14 @@ command -v apt-get >/dev/null || { echo "This installer supports Ubuntu/Debian (
 # --- packages -------------------------------------------------------------------
 say "Installing system packages"
 export DEBIAN_FRONTEND=noninteractive
-apt-get update -qq
-apt-get install -y -qq ca-certificates curl gnupg rsync >/dev/null
+# A fresh server runs automatic security updates for its first few minutes; wait for them
+# instead of failing with "Could not get lock /var/lib/dpkg/lock-frontend".
+APT_WAIT=(-o DPkg::Lock::Timeout=900)
+# Same wait for apt runs inside the Node.js and Tailscale install scripts.
+echo 'DPkg::Lock::Timeout "900";' >/etc/apt/apt.conf.d/90budgify-lock-timeout
+echo "(If the server is still running its first automatic updates, this waits for them to finish.)"
+apt-get "${APT_WAIT[@]}" update -qq
+apt-get "${APT_WAIT[@]}" install -y -qq ca-certificates curl gnupg rsync >/dev/null
 
 node_ok() {
   command -v node >/dev/null || return 1
@@ -50,7 +56,7 @@ node_ok() {
 if ! node_ok; then
   say "Installing Node.js 22"
   curl -fsSL https://deb.nodesource.com/setup_22.x | bash - >/dev/null
-  apt-get install -y -qq nodejs >/dev/null
+  apt-get "${APT_WAIT[@]}" install -y -qq nodejs >/dev/null
 fi
 node_ok || { echo "Node.js 22.13+ is required but $(node -v 2>/dev/null || echo none) is installed."; exit 1; }
 echo "Node $(node -v)"
