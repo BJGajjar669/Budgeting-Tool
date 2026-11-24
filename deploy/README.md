@@ -117,11 +117,15 @@ For real accounts on Plaid's **free Trial plan** (10 bank connections), use your
 
 **Update to a newer version:** `cd ~/budgify && git pull && sudo ./deploy/install.sh`. Your data and settings are kept.
 
-**Keep an off-server copy of your backups** every so often. Run this on your computer:
+**Keep an off-server copy of your backups** every so often. Run these on your computer (Windows PowerShell, Mac or Linux), with Tailscale on; `budgify-vm` is your server's Tailscale name:
 
 ```bash
-ssh ubuntu@budgify-vm 'sudo tar -C /var/lib/budgify -czf - backups' > budgify-backups.tgz
+ssh ubuntu@budgify-vm "sudo tar -C /var/lib/budgify -czf /tmp/budgify-backups.tgz backups && sudo chown ubuntu /tmp/budgify-backups.tgz"
+scp ubuntu@budgify-vm:/tmp/budgify-backups.tgz .
+ssh ubuntu@budgify-vm "rm /tmp/budgify-backups.tgz"
 ```
+
+Keep `budgify-backups.tgz` somewhere private (not a public or shared folder): it contains your financial data and the key to your bank connections.
 
 **Restore a backup:**
 
